@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 
-import { CATEGORIES } from "../utils/catalog";
+import useCategories from "../hooks/useCategories";
 
 export default function Footer() {
     const year = new Date().getFullYear();
+    const { names } = useCategories();
 
     return (
         <footer className="footer">
@@ -12,9 +13,9 @@ export default function Footer() {
                     <div>
                         <p className="footer__title">ShopSphere</p>
                         <p className="muted text-sm footer__blurb">
-                            A small, carefully chosen catalog of shoes,
-                            electronics and accessories, with secure
-                            checkout powered by Stripe.
+                            A curated store for sneakers, tech, everyday
+                            carry and home goods, with honest reviews and
+                            secure checkout powered by Stripe.
                         </p>
                     </div>
 
@@ -22,9 +23,9 @@ export default function Footer() {
                         <p className="eyebrow footer__heading">Shop</p>
                         <ul className="footer__list">
                             <li><Link to="/">All products</Link></li>
-                            {CATEGORIES.map((category) => (
+                            {names.map((category) => (
                                 <li key={category}>
-                                    <Link to={`/?category=${category}`}>
+                                    <Link to={`/?category=${encodeURIComponent(category)}`}>
                                         {category}
                                     </Link>
                                 </li>
@@ -36,6 +37,7 @@ export default function Footer() {
                         <p className="eyebrow footer__heading">Account</p>
                         <ul className="footer__list">
                             <li><Link to="/cart">Cart</Link></li>
+                            <li><Link to="/wishlist">Wishlist</Link></li>
                             <li><Link to="/orders">Order history</Link></li>
                             <li><Link to="/profile">Profile</Link></li>
                         </ul>

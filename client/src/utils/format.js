@@ -111,3 +111,13 @@ export const formatStockLabel = (stock) => {
 
     return `${count} in stock`;
 };
+
+// Whole-percent discount when a product is on sale, else 0.
+export const discountPercent = (product) => {
+    const price = Number(product?.price);
+    const compareAtPrice = Number(product?.compareAtPrice);
+
+    if (!compareAtPrice || compareAtPrice <= price) return 0;
+
+    return Math.round((1 - price / compareAtPrice) * 100);
+};

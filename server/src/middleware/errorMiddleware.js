@@ -35,6 +35,15 @@ const mapError = (error) => {
         };
     }
 
+    // Optimistic concurrency: the document changed between our
+    // read and our write (e.g. two reviews saved at once).
+    if (error.name === "VersionError") {
+        return {
+            status: 409,
+            message: "This item was updated by someone else. Please try again."
+        };
+    }
+
     // Invalid JSON body
     if (error.type === "entity.parse.failed") {
         return { status: 400, message: "Malformed JSON body" };

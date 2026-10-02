@@ -21,6 +21,13 @@ const orderSchema = new mongoose.Schema(
                     required: true
                 },
 
+                // Snapshot of the product at purchase time, so the
+                // order stays accurate if the product later changes.
+                image: {
+                    type: String,
+                    default: ""
+                },
+
                 price: {
                     type: Number,
                     required: true
@@ -64,6 +71,23 @@ const orderSchema = new mongoose.Schema(
             default: "Pending"
         },
 
+        // Collected by Stripe Checkout, saved when payment settles
+        shippingAddress: {
+            name: { type: String, default: "" },
+            phone: { type: String, default: "" },
+            line1: { type: String, default: "" },
+            line2: { type: String, default: "" },
+            city: { type: String, default: "" },
+            state: { type: String, default: "" },
+            postalCode: { type: String, default: "" },
+            country: { type: String, default: "" }
+        },
+
+        customerEmail: {
+            type: String,
+            default: ""
+        },
+
         // Stripe Checkout Session ID
         stripeSessionId: {
             type: String,
@@ -80,6 +104,10 @@ const orderSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+// "My orders" and the admin list are both newest-first.
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ createdAt: -1 });
 
 const Order = mongoose.model("Order", orderSchema);
 

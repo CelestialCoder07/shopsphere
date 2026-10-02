@@ -4,48 +4,64 @@ import {
     createProduct,
     deleteProduct,
     fetchAllProducts,
+    invalidateCategories,
     updateProduct
 } from "../api/products";
 import { useToast } from "../context/hooks";
 import useAsync from "../hooks/useAsync";
+import useCategories from "../hooks/useCategories";
 import AdminHeader from "../components/AdminHeader";
 import ProductImage from "../components/ProductImage";
 import { Alert, EmptyState, ErrorState, Loading } from "../components/Feedback";
 import { PlusIcon, SearchIcon } from "../components/icons";
-import { CATEGORIES, LOW_STOCK_THRESHOLD } from "../utils/catalog";
-import { formatCurrency, formatStockLabel, pluralize } from "../utils/format";
+import { LOW_STOCK_THRESHOLD } from "../utils/catalog";
+import { discountPercent, formatCurrency, formatStockLabel, pluralize } from "../utils/format";
 
 const EMPTY_FORM = {
     name: "",
+    brand: "",
     description: "",
     price: "",
-    category: CATEGORIES[0],
+    compareAtPrice: "",
+    category: "",
     image: "",
-    stock: ""
+    stock: "",
+    featured: false
 };
 
 const toForm = (product) => ({
     name: product.name,
+    brand: product.brand || "",
     description: product.description,
     price: String(product.price),
+    compareAtPrice: product.compareAtPrice ? String(product.compareAtPrice) : "",
     category: product.category,
     image: product.image || "",
-    stock: String(product.stock)
+    stock: String(product.stock),
+    featured: Boolean(product.featured)
 });
 
 const toPayload = (form) => ({
     name: form.name.trim(),
+    brand: form.brand.trim(),
     description: form.description.trim(),
     price: Number(form.price),
-    category: form.category,
+    // Empty clears the sale on the server.
+    compareAtPrice: form.compareAtPrice === "" ? "" : Number(form.compareAtPrice),
+    category: form.category.trim(),
     image: form.image.trim(),
-    stock: Number(form.stock)
+    stock: Number(form.stock),
+    featured: form.featured
 });
 
 const validate = (payload) => {
     if (!payload.name) return "Give the product a name.";
     if (!payload.description) return "Add a short description.";
+    if (!payload.category) return "Pick or type a category.";
     if (!Number.isFinite(payload.price) || payload.price < 0) return "Price must be 0 or more.";
+    if (payload.compareAtPrice !== "" && !(payload.compareAtPrice > payload.price)) {
+        return "The \"was\" price must be higher than the price (or leave it empty).";
+    }
     if (!Number.isInteger(payload.stock) || payload.stock < 0) return "Stock must be a whole number, 0 or more.";
     return "";
 };
@@ -55,9 +71,11 @@ function ProductForm({ editing, onSaved, onCancel }) {
     const [form, setForm] = useState(editing ? toForm(editing) : EMPTY_FORM);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+    const { names: categories } = useCategories();
 
     const handleChange = (event) => {
-        setForm({ ...form, [event.target.name]: event.target.value });
+        const { name, value, type, checked } = event.target;
+        setForm({ ...form, [name]: type === "checkbox" ? checked : value });
     };
 
     const handleSubmit = async (event) => {
@@ -79,6 +97,7 @@ function ProductForm({ editing, onSaved, onCancel }) {
                 ? await updateProduct(editing._id, payload)
                 : await createProduct(payload);
 
+            invalidateCategories();
             notify(editing ? `Saved changes to ${saved.name}` : `${saved.name} added to the catalog`);
             onSaved(saved, Boolean(editing));
 
@@ -96,10 +115,17 @@ function ProductForm({ editing, onSaved, onCancel }) {
 
             <Alert>{error}</Alert>
 
-            <label className="field">
-                <span className="field__label">Name</span>
-                <input className="input" name="name" value={form.name} onChange={handleChange} required />
-            </label>
+            <div className="admin-form__grid">
+                <label className="field">
+                    <span className="field__label">Name</span>
+                    <input className="input" name="name" value={form.name} onChange={handleChange} required />
+                </label>
+
+                <label className="field">
+                    <span className="field__label">Brand</span>
+                    <input className="input" name="brand" value={form.brand} onChange={handleChange} />
+                </label>
+            </div>
 
             <label className="field">
                 <span className="field__label">Description</span>
@@ -129,6 +155,23 @@ function ProductForm({ editing, onSaved, onCancel }) {
                 </label>
 
                 <label className="field">
+                    <span className="field__label">Was (₹), optional</span>
+                    <input
+                        className="input"
+                        type="number"
+                        name="compareAtPrice"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="Sale only"
+                        value={form.compareAtPrice}
+                        onChange={handleChange}
+                    />
+                </label>
+            </div>
+
+            <div className="admin-form__grid">
+                <label className="field">
                     <span className="field__label">Stock</span>
                     <input
                         className="input"
@@ -142,16 +185,25 @@ function ProductForm({ editing, onSaved, onCancel }) {
                         required
                     />
                 </label>
-            </div>
 
-            <label className="field">
-                <span className="field__label">Category</span>
-                <select className="select" name="category" value={form.category} onChange={handleChange}>
-                    {CATEGORIES.map((category) => (
-                        <option key={category} value={category}>{category}</option>
-                    ))}
-                </select>
-            </label>
+                <label className="field">
+                    <span className="field__label">Category</span>
+                    <input
+                        className="input"
+                        name="category"
+                        list="category-options"
+                        placeholder="Pick or type new"
+                        value={form.category}
+                        onChange={handleChange}
+                        required
+                    />
+                    <datalist id="category-options">
+                        {categories.map((category) => (
+                            <option key={category} value={category} />
+                        ))}
+                    </datalist>
+                </label>
+            </div>
 
             <label className="field">
                 <span className="field__label">Image URL</span>
@@ -163,6 +215,11 @@ function ProductForm({ editing, onSaved, onCancel }) {
                     value={form.image}
                     onChange={handleChange}
                 />
+            </label>
+
+            <label className="toggle">
+                <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} />
+                <span>Feature on the home page</span>
             </label>
 
             <div className="admin-form__preview">
@@ -212,6 +269,7 @@ export default function AdminProducts() {
 
         try {
             await deleteProduct(product._id);
+            invalidateCategories();
             setData((current = []) => current.filter((item) => item._id !== product._id));
             if (editing?._id === product._id) setEditing(null);
             notify(`${product.name} was removed`);
@@ -237,6 +295,7 @@ export default function AdminProducts() {
         (product) =>
             !term ||
             product.name.toLowerCase().includes(term) ||
+            (product.brand || "").toLowerCase().includes(term) ||
             product.category.toLowerCase().includes(term)
     );
 
@@ -292,8 +351,12 @@ export default function AdminProducts() {
                                         <div>
                                             <p className="admin-row__name">{product.name}</p>
                                             <div className="admin-row__meta">
-                                                <span>{product.category}</span>
-                                                <span>{formatCurrency(product.price)}</span>
+                                                <span>{product.brand ? `${product.brand} · ` : ""}{product.category}</span>
+                                                <span>
+                                                    {formatCurrency(product.price)}
+                                                    {discountPercent(product) > 0 && ` (−${discountPercent(product)}%)`}
+                                                </span>
+                                                {product.featured && <span className="admin-row__featured">Featured</span>}
                                                 <span className={low ? "admin-row__low" : undefined}>
                                                     {formatStockLabel(product.stock)}
                                                 </span>

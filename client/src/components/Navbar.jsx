@@ -3,8 +3,9 @@ import { Link, NavLink } from "react-router-dom";
 
 import { useAuth, useCart } from "../context/hooks";
 import useSignOut from "../hooks/useSignOut";
+import useWishlist from "../hooks/useWishlist";
 import { initials } from "../utils/format";
-import { CartIcon, CloseIcon, LogoutIcon, MenuIcon } from "./icons";
+import { CartIcon, CloseIcon, HeartIcon, LogoutIcon, MenuIcon } from "./icons";
 
 const linkClass = ({ isActive }) => `nav__link${isActive ? " is-active" : ""}`;
 
@@ -12,6 +13,7 @@ export default function Navbar() {
     const { user, isAuthenticated, isAdmin } = useAuth();
     const { itemCount } = useCart();
     const signOut = useSignOut();
+    const { count: wishlistCount } = useWishlist();
 
     const [drawerOpen, setDrawerOpen] = useState(false);
     const closeDrawer = () => setDrawerOpen(false);
@@ -87,6 +89,18 @@ export default function Navbar() {
                             </Link>
                         )}
 
+                        {isAuthenticated && (
+                            <Link
+                                to="/wishlist"
+                                className="nav__wish"
+                                aria-label={`Wishlist, ${wishlistCount} items`}
+                                title="Wishlist"
+                            >
+                                <HeartIcon size={17} filled={wishlistCount > 0} />
+                                {wishlistCount > 0 && <span className="nav__wish-count">{wishlistCount}</span>}
+                            </Link>
+                        )}
+
                         <Link
                             to="/cart"
                             className="nav__cart"
@@ -117,6 +131,9 @@ export default function Navbar() {
 
                     {isAuthenticated ? (
                         <>
+                            <NavLink to="/wishlist" className={linkClass} onClick={closeDrawer}>
+                                Wishlist
+                            </NavLink>
                             <NavLink to="/profile" className={linkClass} onClick={closeDrawer}>
                                 Profile
                             </NavLink>

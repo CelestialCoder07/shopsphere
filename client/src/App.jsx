@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Wishlist from "./pages/Wishlist";
 import NotFound from "./pages/NotFound";
 
 import AdminDashboard from "./pages/AdminDashboard";
@@ -40,6 +41,7 @@ export default function App() {
                     {/* Signed-in customers */}
                     <Route path="/orders" element={signedIn(<Orders />)} />
                     <Route path="/profile" element={signedIn(<Profile />)} />
+                    <Route path="/wishlist" element={signedIn(<Wishlist />)} />
                     <Route path="/payment-success" element={signedIn(<PaymentSuccess />)} />
 
                     {/* Admin */}

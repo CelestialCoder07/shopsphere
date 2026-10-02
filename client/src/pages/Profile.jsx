@@ -9,6 +9,7 @@ import { ErrorState, Loading } from "../components/Feedback";
 import {
     CartIcon,
     ChevronRightIcon,
+    HeartIcon,
     LayersIcon,
     LogoutIcon,
     PackageIcon
@@ -51,6 +52,10 @@ export default function Profile() {
 
                     <Link to="/orders" className="profile__link">
                         <PackageIcon /> <span>Order history</span> <ChevronRightIcon />
+                    </Link>
+
+                    <Link to="/wishlist" className="profile__link">
+                        <HeartIcon /> <span>Wishlist · {pluralize(user.wishlist?.length ?? 0, "item")}</span> <ChevronRightIcon />
                     </Link>
 
                     <Link to="/cart" className="profile__link">

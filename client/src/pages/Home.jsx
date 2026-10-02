@@ -4,7 +4,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { fetchProducts } from "../api/products";
 import { useAuth } from "../context/hooks";
 import useAsync from "../hooks/useAsync";
+import useCategories from "../hooks/useCategories";
 import useDebouncedValue from "../hooks/useDebouncedValue";
+import Price from "../components/Price";
 import ProductCard from "../components/ProductCard";
 import ProductImage from "../components/ProductImage";
 import { EmptyState, ErrorState, SkeletonGrid } from "../components/Feedback";
@@ -13,116 +15,177 @@ import {
     ChevronLeftIcon,
     ChevronRightIcon,
     CloseIcon,
-    SearchIcon
+    SearchIcon,
+    ShieldIcon,
+    StarIcon,
+    TagIcon,
+    TruckIcon,
+    PackageIcon
 } from "../components/icons";
-import { CATEGORIES, SORT_OPTIONS } from "../utils/catalog";
-import { formatCurrency, pluralize } from "../utils/format";
+import { SORT_OPTIONS } from "../utils/catalog";
+import { pluralize } from "../utils/format";
 
 const PAGE_SIZE = 12;
 
-const TICKER_ITEMS = [
-    "Secure Stripe checkout",
-    "Prices verified at checkout",
-    "Shoes · Electronics · Accessories",
-    "Track every order",
-    "New pieces added regularly"
+const PERKS = [
+    { icon: TruckIcon, title: "Free shipping", text: "On every order, no minimum" },
+    { icon: ShieldIcon, title: "Secure checkout", text: "Payments handled by Stripe" },
+    { icon: StarIcon, title: "Real reviews", text: "Verified-purchase badges" },
+    { icon: PackageIcon, title: "Live tracking", text: "From paid to delivered" }
 ];
 
 // -----------------------------------------------------
 // Hero
 // -----------------------------------------------------
 
-function Hero({ featured, total }) {
+function HeroTile({ product, size }) {
+    return (
+        <Link to={`/products/${product._id}`} className={`hero-tile hero-tile--${size}`}>
+            <ProductImage src={product.image} alt={product.name} iconSize={40} />
+            <span className="hero-tile__caption">
+                <span className="hero-tile__brand">{product.brand}</span>
+                <span className="hero-tile__name">{product.name}</span>
+                <Price product={product} size="sm" />
+            </span>
+        </Link>
+    );
+}
+
+function Hero({ featured, totalProducts, categoryCount }) {
     const { isAuthenticated } = useAuth();
+    const [main, second, third] = featured;
 
     return (
         <section className="hero">
             <div className="hero__content">
-                <p className="eyebrow">The ShopSphere Edit · {new Date().getFullYear()}</p>
+                <p className="eyebrow">New season · {new Date().getFullYear()}</p>
 
                 <h1 className="display hero__title">
                     Goods worth <em>keeping</em>.
                 </h1>
 
                 <p className="hero__lede">
-                    A tight, considered catalog of shoes, electronics and
-                    everyday accessories. Fewer things, chosen better,
-                    delivered with a checkout you can trust.
+                    Sneakers, tech, everyday carry and pieces for your home.
+                    A curated catalog with honest reviews and a checkout
+                    you can trust.
                 </p>
 
                 <div className="hero__actions">
                     <a href="#catalog" className="btn btn--primary btn--lg">
-                        Browse the catalog <ArrowRightIcon />
+                        Shop the catalog <ArrowRightIcon />
                     </a>
 
-                    {isAuthenticated ? (
-                        <Link to="/orders" className="btn btn--outline btn--lg">
-                            Your orders
-                        </Link>
-                    ) : (
-                        <Link to="/register" className="btn btn--outline btn--lg">
-                            Create an account
-                        </Link>
-                    )}
+                    <Link
+                        to={isAuthenticated ? "/wishlist" : "/register"}
+                        className="btn btn--outline btn--lg"
+                    >
+                        {isAuthenticated ? "Your wishlist" : "Create an account"}
+                    </Link>
                 </div>
 
                 <dl className="hero__stats">
                     <div>
                         <dt className="hero__stat-label">Products</dt>
-                        <dd className="hero__stat-value">{total ?? "—"}</dd>
+                        <dd className="hero__stat-value">{totalProducts ?? "—"}</dd>
                     </div>
                     <div>
                         <dt className="hero__stat-label">Categories</dt>
-                        <dd className="hero__stat-value">{CATEGORIES.length}</dd>
+                        <dd className="hero__stat-value">{categoryCount || "—"}</dd>
                     </div>
                     <div>
-                        <dt className="hero__stat-label">Checkout</dt>
-                        <dd className="hero__stat-value">Stripe</dd>
+                        <dt className="hero__stat-label">Shipping</dt>
+                        <dd className="hero__stat-value">Free</dd>
                     </div>
                 </dl>
             </div>
 
-            {featured ? (
-                <Link to={`/products/${featured._id}`} className="hero__visual">
-                    <span className="hero__visual-badge badge badge--accent">New in</span>
-                    <div className="hero__visual-frame">
-                        <ProductImage src={featured.image} alt={featured.name} iconSize={56} />
-                    </div>
-                    <div className="hero__visual-caption">
-                        <div>
-                            <p className="eyebrow">{featured.category}</p>
-                            <p className="hero__visual-name">{featured.name}</p>
-                        </div>
-                        <span className="price">{formatCurrency(featured.price)}</span>
-                    </div>
-                </Link>
-            ) : (
-                <div className="hero__visual" aria-hidden="true">
-                    <div className="hero__visual-frame skeleton" />
-                    <div className="hero__visual-caption">
-                        <div className="skeleton" style={{ height: 14, width: "60%" }} />
-                    </div>
-                </div>
-            )}
+            <div className="hero__collage">
+                {main ? (
+                    <>
+                        <HeroTile product={main} size="lg" />
+                        {second && <HeroTile product={second} size="sm" />}
+                        {third && <HeroTile product={third} size="sm" />}
+                    </>
+                ) : (
+                    <>
+                        <div className="hero-tile hero-tile--lg skeleton" />
+                        <div className="hero-tile hero-tile--sm skeleton" />
+                        <div className="hero-tile hero-tile--sm skeleton" />
+                    </>
+                )}
+            </div>
         </section>
     );
 }
 
-function Ticker() {
-    // Rendered twice so the CSS loop is seamless.
-    const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+function Perks() {
+    return (
+        <ul className="perks">
+            {PERKS.map(({ icon: Icon, title, text }) => (
+                <li className="perks__item" key={title}>
+                    <span className="perks__icon"><Icon size={20} /></span>
+                    <span>
+                        <span className="perks__title">{title}</span>
+                        <span className="perks__text">{text}</span>
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+// -----------------------------------------------------
+// Categories & rails
+// -----------------------------------------------------
+
+function CategoryTiles({ categories, onPick }) {
+    if (categories.length === 0) return null;
 
     return (
-        <div className="ticker" aria-hidden="true">
-            <div className="ticker__track">
-                {items.map((item, index) => (
-                    <span className="ticker__item" key={index}>
-                        <span className="ticker__dot" />
-                        {item}
-                    </span>
+        <section className="home-section">
+            <div className="section-head">
+                <h2 className="display display--md">Shop by category</h2>
+            </div>
+
+            <div className="category-tiles">
+                {categories.map((category) => (
+                    <button
+                        type="button"
+                        key={category.name}
+                        className="category-tile"
+                        onClick={() => onPick(category.name)}
+                    >
+                        <ProductImage src={category.image} alt="" iconSize={32} />
+                        <span className="category-tile__label">
+                            <span className="category-tile__name">{category.name}</span>
+                            <span className="category-tile__count">{pluralize(category.count, "item")}</span>
+                        </span>
+                    </button>
                 ))}
             </div>
-        </div>
+        </section>
+    );
+}
+
+function Rail({ title, eyebrow, products, action }) {
+    if (!products || products.length === 0) return null;
+
+    return (
+        <section className="home-section">
+            <div className="section-head">
+                <div>
+                    {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+                    <h2 className="display display--md">{title}</h2>
+                </div>
+                {action}
+            </div>
+
+            <div className="grid-auto">
+                {products.map((product) => (
+                    <ProductCard key={product._id} product={product} />
+                ))}
+            </div>
+        </section>
     );
 }
 
@@ -176,16 +239,17 @@ function Pagination({ page, pages, onChange }) {
 
 export default function Home() {
     const [params, setParams] = useSearchParams();
+    const { categories, names } = useCategories();
 
-    const category = CATEGORIES.includes(params.get("category"))
-        ? params.get("category")
-        : "All";
+    const requestedCategory = params.get("category");
+    const category = requestedCategory || "All";
     const sort = SORT_OPTIONS.some((option) => option.value === params.get("sort"))
         ? params.get("sort")
         : "newest";
+    const onSale = params.get("sale") === "1";
     const page = Math.max(1, Number.parseInt(params.get("page"), 10) || 1);
 
-    const [query, setQuery] = useState(params.get("q") || "");
+    const [query, setQuery] = useState("");
     const search = useDebouncedValue(query.trim(), 300);
 
     // Filters live in the URL so results are shareable and the
@@ -206,37 +270,42 @@ export default function Home() {
         setParams(next, { replace: true });
     };
 
+    const scrollToCatalog = () =>
+        document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" });
+
     const handleQueryChange = (value) => {
         setQuery(value);
         if (params.has("page")) updateParams({});
     };
 
-    const showcase = useAsync(
-        () => fetchProducts({ sort: "newest", limit: 6 }),
-        []
-    );
+    const featured = useAsync(() => fetchProducts({ featured: true, limit: 8 }), []);
+    const deals = useAsync(() => fetchProducts({ onSale: true, sort: "price-asc", limit: 4 }), []);
 
     const catalog = useAsync(
-        () => fetchProducts({ search, category, sort, page, limit: PAGE_SIZE }),
-        [search, category, sort, page]
+        () => fetchProducts({ search, category, sort, page, onSale, limit: PAGE_SIZE }),
+        [search, category, sort, page, onSale]
     );
 
-    const featured =
-        showcase.data?.products.find((product) => product.image && product.stock > 0) ||
-        showcase.data?.products[0];
-
+    const featuredProducts = featured.data?.products ?? [];
+    const heroProducts = featuredProducts.filter((product) => product.image).slice(0, 3);
     const products = catalog.data?.products ?? [];
     const total = catalog.data?.total ?? 0;
-    const hasFilters = Boolean(search) || category !== "All";
+    const hasFilters = Boolean(search) || category !== "All" || onSale;
+    const totalProducts = categories.reduce((sum, item) => sum + item.count, 0) || undefined;
+
+    const pickCategory = (name) => {
+        updateParams({ category: name === "All" ? "" : name });
+        scrollToCatalog();
+    };
 
     const clearFilters = () => {
         setQuery("");
-        updateParams({ category: "", q: "" });
+        updateParams({ category: "", sale: "" });
     };
 
     const goToPage = (number) => {
         updateParams({ page: number > 1 ? number : "" });
-        document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" });
+        scrollToCatalog();
     };
 
     let results;
@@ -260,7 +329,7 @@ export default function Home() {
             >
                 {search
                     ? `We couldn't find anything for “${search}”. Try a different word or category.`
-                    : "There are no products in this category yet."}
+                    : "No products match these filters yet."}
             </EmptyState>
         );
     } else {
@@ -272,11 +341,7 @@ export default function Home() {
                     ))}
                 </div>
 
-                <Pagination
-                    page={catalog.data.page}
-                    pages={catalog.data.pages}
-                    onChange={goToPage}
-                />
+                <Pagination page={catalog.data.page} pages={catalog.data.pages} onChange={goToPage} />
             </>
         );
     }
@@ -284,21 +349,48 @@ export default function Home() {
     return (
         <>
             <div className="page">
-                <Hero featured={featured} total={showcase.data?.total} />
-            </div>
+                <Hero
+                    featured={heroProducts}
+                    totalProducts={totalProducts}
+                    categoryCount={categories.length}
+                />
+                <Perks />
+                <CategoryTiles categories={categories} onPick={pickCategory} />
+                <Rail
+                    eyebrow="Hand-picked"
+                    title="Editor's picks"
+                    products={featuredProducts.slice(0, 4)}
+                />
+                <Rail
+                    eyebrow="Limited time"
+                    title="On sale now"
+                    products={deals.data?.products}
+                    action={
+                        <button
+                            type="button"
+                            className="link-underline text-sm"
+                            onClick={() => {
+                                updateParams({ sale: "1", category: "" });
+                                scrollToCatalog();
+                            }}
+                        >
+                            See all deals
+                        </button>
+                    }
+                />
 
-            <Ticker />
-
-            <div className="page">
                 <section className="catalog" id="catalog">
                     <div className="section-head">
                         <h2 className="display display--md">The catalog</h2>
-                        <span className="eyebrow">{category === "All" ? "Everything" : category}</span>
+                        <span className="eyebrow">
+                            {category === "All" ? "Everything" : category}
+                            {onSale && " · on sale"}
+                        </span>
                     </div>
 
                     <div className="catalog__toolbar">
                         <div className="catalog__chips" role="tablist" aria-label="Categories">
-                            {["All", ...CATEGORIES].map((name) => (
+                            {["All", ...names].map((name) => (
                                 <button
                                     type="button"
                                     key={name}
@@ -318,7 +410,7 @@ export default function Home() {
                             <input
                                 type="search"
                                 className="search__input"
-                                placeholder="Search products…"
+                                placeholder="Search products or brands…"
                                 value={query}
                                 onChange={(event) => handleQueryChange(event.target.value)}
                             />
@@ -341,24 +433,36 @@ export default function Home() {
                             {search && ` for “${search}”`}
                         </span>
 
-                        <label className="catalog__sort">
-                            <span className="catalog__summary">Sort</span>
-                            <select
-                                className="select select--inline"
-                                value={sort}
-                                onChange={(event) =>
-                                    updateParams({
-                                        sort: event.target.value === "newest" ? "" : event.target.value
-                                    })
-                                }
-                            >
-                                {SORT_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
+                        <div className="cluster">
+                            <label className="toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={onSale}
+                                    onChange={(event) => updateParams({ sale: event.target.checked ? "1" : "" })}
+                                />
+                                <TagIcon size={14} />
+                                <span>On sale</span>
+                            </label>
+
+                            <label className="catalog__sort">
+                                <span className="catalog__summary">Sort</span>
+                                <select
+                                    className="select select--inline"
+                                    value={sort}
+                                    onChange={(event) =>
+                                        updateParams({
+                                            sort: event.target.value === "newest" ? "" : event.target.value
+                                        })
+                                    }
+                                >
+                                    {SORT_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
                     </div>
 
                     {results}

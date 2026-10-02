@@ -4,6 +4,7 @@ import { fetchAllOrders, updateOrderStatus } from "../api/orders";
 import { useToast } from "../context/hooks";
 import useAsync from "../hooks/useAsync";
 import AdminHeader from "../components/AdminHeader";
+import ShippingAddress from "../components/ShippingAddress";
 import { EmptyState, ErrorState, Loading } from "../components/Feedback";
 import { PackageIcon } from "../components/icons";
 import { ORDER_STATUSES, paymentBadgeClass, statusClass } from "../utils/catalog";
@@ -54,6 +55,8 @@ function OrderPanel({ order, onStatusChange, saving }) {
                 </div>
 
                 <div className="admin-order__controls">
+                    <ShippingAddress address={order.shippingAddress} />
+
                     <div className="admin-order__totals">
                         <span className="eyebrow">Total · {pluralize(itemCount, "item")}</span>
                         <span className="admin-order__total-value">{formatCurrency(order.totalPrice)}</span>

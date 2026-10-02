@@ -35,7 +35,17 @@ const userSchema = new mongoose.Schema(
             type: String,
             enum: ["user", "admin"],
             default: "user"
-        }
+        },
+
+        // Saved products. Stored as references; updated with
+        // atomic $addToSet / $pull so concurrent taps never
+        // duplicate or lose entries.
+        wishlist: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Product"
+            }
+        ]
     },
     {
         timestamps: true

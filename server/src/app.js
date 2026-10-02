@@ -13,6 +13,7 @@ const productRoutes = require("./routes/productRoutes");
 const authRoutes = require("./routes/authRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const notFound = require("./middleware/notFoundMiddleware");
 const errorHandler = require("./middleware/errorMiddleware");
@@ -80,6 +81,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/users", userRoutes);
 
 // =====================================================
 // 404 + ERROR HANDLING

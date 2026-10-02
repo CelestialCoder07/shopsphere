@@ -20,6 +20,7 @@ const toPublicUser = (user) => ({
     name: user.name,
     email: user.email,
     role: user.role,
+    wishlist: (user.wishlist || []).map(String),
     createdAt: user.createdAt
 });
 

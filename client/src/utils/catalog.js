@@ -2,10 +2,9 @@
 // CATALOG CONSTANTS
 // =====================================================
 
-export const CATEGORIES = ["Shoes", "Electronics", "Accessories"];
-
 export const SORT_OPTIONS = [
     { value: "newest", label: "Newest" },
+    { value: "rating", label: "Top rated" },
     { value: "price-asc", label: "Price: low to high" },
     { value: "price-desc", label: "Price: high to low" },
     { value: "name", label: "Name: A–Z" }

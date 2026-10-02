@@ -1,7 +1,9 @@
 const stripe = require("../config/stripe");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const User = require("../models/User");
 const { resolveCartItems } = require("../utils/cart");
+const { extractShippingAddress } = require("../utils/shipping");
 
 const CURRENCY = "inr";
 // CLIENT_URL may list several origins for CORS; Stripe redirects
@@ -23,7 +25,11 @@ const buildLineItems = (items) => {
     return items.map((item) => ({
         price_data: {
             currency: CURRENCY,
-            product_data: { name: item.name },
+            product_data: {
+                name: item.name,
+                // Stripe only accepts absolute https image URLs.
+                ...(item.image?.startsWith("https://") ? { images: [item.image] } : {})
+            },
             unit_amount: toStripeAmount(item.price)
         },
         quantity: item.quantity
@@ -49,20 +55,35 @@ const decrementStock = async (items) => {
     }
 };
 
-// Mark an order paid exactly once. Safe to call from both the
-// webhook and the browser-side verification endpoint.
-const settleOrderAsPaid = async (order) => {
-    if (order.paymentStatus === "Paid") {
-        return false;
-    }
+// Mark an order paid exactly once. The webhook and the browser's
+// verify call can arrive at the same moment, so the transition is
+// a single atomic conditional update: only the caller that flips
+// Pending → Paid gets the document back and decrements stock.
+const settleOrderAsPaid = async (orderId, session) => {
+    const update = {
+        paymentStatus: "Paid",
+        paidAt: new Date()
+    };
 
-    order.paymentStatus = "Paid";
-    order.paidAt = new Date();
-    await order.save();
+    const shippingAddress = extractShippingAddress(session);
+    if (shippingAddress) update.shippingAddress = shippingAddress;
+
+    const email = session?.customer_details?.email;
+    if (email) update.customerEmail = email;
+
+    const order = await Order.findOneAndUpdate(
+        { _id: orderId, paymentStatus: { $ne: "Paid" } },
+        { $set: update },
+        { returnDocument: "after" }
+    );
+
+    if (!order) {
+        return null;
+    }
 
     await decrementStock(order.items);
 
-    return true;
+    return order;
 };
 
 // =====================================================
@@ -98,10 +119,15 @@ const createCheckoutSession = async (req, res) => {
         paymentStatus: "Pending"
     });
 
+    const customer = await User.findById(req.user.id).select("email");
+
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         line_items: buildLineItems(resolvedItems),
         mode: "payment",
+        customer_email: customer?.email,
+        shipping_address_collection: { allowed_countries: ["IN"] },
+        phone_number_collection: { enabled: true },
         success_url:
             `${CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${CLIENT_URL}/cart`,
@@ -166,21 +192,23 @@ const handleStripeWebhook = async (req, res) => {
             });
         }
 
-        const order = await Order.findById(orderId);
-
-        if (!order) {
+        if (!(await Order.exists({ _id: orderId }))) {
             return res.status(404).json({
                 success: false,
                 message: "Order not found"
             });
         }
 
-        const settled = await settleOrderAsPaid(order);
+        // "completed" means the checkout finished; with delayed
+        // payment methods the money may not have moved yet.
+        const settled = session.payment_status === "paid"
+            ? await settleOrderAsPaid(orderId, session)
+            : null;
 
         console.log(
             settled
                 ? `Payment confirmed for order ${orderId}`
-                : `Order ${orderId} was already marked paid`
+                : `Order ${orderId} not settled (already paid or payment pending)`
         );
     }
 
@@ -218,7 +246,7 @@ const verifyPayment = async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const orderId = session.metadata?.orderId;
 
-    const order = orderId ? await Order.findById(orderId) : null;
+    let order = orderId ? await Order.findById(orderId) : null;
 
     if (!order) {
         return res.status(404).json({
@@ -237,8 +265,9 @@ const verifyPayment = async (req, res) => {
 
     // Local development has no public URL for Stripe to POST the
     // webhook to, so reconcile here when Stripe already has the money.
-    if (session.payment_status === "paid") {
-        await settleOrderAsPaid(order);
+    if (session.payment_status === "paid" && order.paymentStatus !== "Paid") {
+        order = (await settleOrderAsPaid(order._id, session)) ||
+            (await Order.findById(order._id));
     }
 
     res.status(200).json({
@@ -252,5 +281,7 @@ const verifyPayment = async (req, res) => {
 module.exports = {
     createCheckoutSession,
     handleStripeWebhook,
-    verifyPayment
+    verifyPayment,
+    // Exported for the concurrency test.
+    settleOrderAsPaid
 };

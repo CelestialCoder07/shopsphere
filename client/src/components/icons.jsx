@@ -178,3 +178,29 @@ export const InboxIcon = ({ size = 26 }) => (
         <path d="M3.5 13.5h4.2l1 2.2h6.6l1-2.2h4.2" />
     </svg>
 );
+
+export const HeartIcon = ({ size = 18, filled = false }) => (
+    <svg {...svgProps(size)} fill={filled ? "currentColor" : "none"}>
+        <path d="M12 20.3s-7.5-4.6-9.3-9.2C1.4 7.7 3.6 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.4 0 5.6 3.2 4.3 6.6-1.8 4.6-9.3 9.2-9.3 9.2Z" />
+    </svg>
+);
+
+export const StarIcon = ({ size = 16, filled = true }) => (
+    <svg {...svgProps(size)} fill={filled ? "currentColor" : "none"}>
+        <path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8L12 3.6Z" />
+    </svg>
+);
+
+export const TagIcon = ({ size = 18 }) => (
+    <svg {...svgProps(size)}>
+        <path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.5 1.5 0 0 1 0 2.1l-6.1 6.1a1.5 1.5 0 0 1-2.1 0l-8.8-7.8Z" />
+        <circle cx="8" cy="8" r="1.5" />
+    </svg>
+);
+
+export const MapPinIcon = ({ size = 16 }) => (
+    <svg {...svgProps(size)}>
+        <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" />
+        <circle cx="12" cy="10" r="2.3" />
+    </svg>
+);

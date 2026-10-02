@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { cancelOrder, fetchMyOrders } from "../api/orders";
 import { useToast } from "../context/hooks";
 import useAsync from "../hooks/useAsync";
+import ProductImage from "../components/ProductImage";
+import ShippingAddress from "../components/ShippingAddress";
 import { EmptyState, ErrorState, Loading } from "../components/Feedback";
 import { ArrowRightIcon, PackageIcon } from "../components/icons";
 import { paymentBadgeClass, statusClass } from "../utils/catalog";
@@ -80,11 +82,16 @@ function OrderCard({ order, onCancelled }) {
             <ul className="order-card__lines">
                 {order.items.map((item, index) => (
                     <li className="order-line" key={item._id || index}>
-                        <span>
-                            <Link to={`/products/${item.product}`} className="order-line__name">
-                                {item.name}
+                        <span className="order-line__item">
+                            <Link to={`/products/${item.product}`} className="order-line__thumb" tabIndex={-1} aria-hidden="true">
+                                <ProductImage src={item.image} alt="" iconSize={16} />
                             </Link>
-                            <span className="order-line__qty">× {item.quantity}</span>
+                            <span>
+                                <Link to={`/products/${item.product}`} className="order-line__name">
+                                    {item.name}
+                                </Link>
+                                <span className="order-line__qty">× {item.quantity}</span>
+                            </span>
                         </span>
                         <span className="order-line__amount">
                             {formatCurrency(item.price * item.quantity)}
@@ -92,6 +99,12 @@ function OrderCard({ order, onCancelled }) {
                     </li>
                 ))}
             </ul>
+
+            {order.shippingAddress?.line1 && (
+                <div className="order-card__ship">
+                    <ShippingAddress address={order.shippingAddress} compact />
+                </div>
+            )}
 
             <footer className="order-card__foot">
                 <span className="cluster">

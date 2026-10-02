@@ -57,7 +57,7 @@ function CartLine({ item }) {
             </Link>
 
             <div>
-                <p className="eyebrow">{item.category}</p>
+                <p className="eyebrow">{item.brand || item.category}</p>
                 <Link to={href} className="cart-line__name">{item.name}</Link>
                 <p className="cart-line__unit">
                     {formatCurrency(item.price)} each · {formatStockLabel(item.stock)}
@@ -93,7 +93,7 @@ function CartLine({ item }) {
 }
 
 export default function Cart() {
-    const { cart, itemCount, subtotal } = useCart();
+    const { cart, itemCount, subtotal, savings } = useCart();
     const { isAuthenticated } = useAuth();
 
     const [redirecting, setRedirecting] = useState(false);
@@ -159,6 +159,12 @@ export default function Cart() {
                             <span className="muted">Subtotal · {pluralize(itemCount, "item")}</span>
                             <span className="price">{formatCurrency(subtotal)}</span>
                         </div>
+                        {savings > 0 && (
+                            <div className="summary__row summary__row--save">
+                                <span>Sale savings</span>
+                                <span className="price">−{formatCurrency(savings)}</span>
+                            </div>
+                        )}
                         <div className="summary__row">
                             <span className="muted">Shipping</span>
                             <span>Free</span>
@@ -201,8 +207,8 @@ export default function Cart() {
 
                     <p className="summary__note">
                         <ShieldIcon size={14} />
-                        You'll finish paying on Stripe's secure checkout page.
-                        Prices are confirmed again at payment.
+                        You'll enter your delivery address and pay on Stripe's
+                        secure checkout page. Prices are confirmed again at payment.
                     </p>
                 </aside>
             </div>

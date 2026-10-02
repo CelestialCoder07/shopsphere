@@ -12,7 +12,7 @@ const MAX_LIMIT = 60;
  * missing fields.
  */
 export const fetchProducts = async (options = {}) => {
-    const { search, category, sort, page, limit } = options;
+    const { search, category, sort, page, limit, onSale, featured } = options;
 
     const params = {};
 
@@ -30,6 +30,14 @@ export const fetchProducts = async (options = {}) => {
 
     if (page) {
         params.page = page;
+    }
+
+    if (onSale) {
+        params.onSale = true;
+    }
+
+    if (featured) {
+        params.featured = true;
     }
 
     params.limit = Math.min(limit || MAX_LIMIT, MAX_LIMIT);
@@ -95,5 +103,56 @@ export const deleteProduct = async (id) => {
     return request({
         method: "delete",
         url: `/products/${id}`
+    });
+};
+
+// -----------------------------------------------------
+// Categories (cached)
+// -----------------------------------------------------
+// Several components need the category list at once (navbar,
+// home, footer, admin form). Share one in-flight request and
+// keep the result for a minute.
+
+const CATEGORY_TTL_MS = 60_000;
+let categoriesCache = null;
+
+export const fetchCategories = () => {
+    const now = Date.now();
+
+    if (!categoriesCache || now - categoriesCache.at > CATEGORY_TTL_MS) {
+        const promise = request({ method: "get", url: "/products/categories" })
+            .then((data) => (Array.isArray(data.categories) ? data.categories : []))
+            .catch((error) => {
+                categoriesCache = null;
+                throw error;
+            });
+
+        categoriesCache = { at: now, promise };
+    }
+
+    return categoriesCache.promise;
+};
+
+// Call after admin changes so new categories show up.
+export const invalidateCategories = () => {
+    categoriesCache = null;
+};
+
+// -----------------------------------------------------
+// Reviews
+// -----------------------------------------------------
+
+export const submitReview = async (productId, { rating, comment }) => {
+    return request({
+        method: "post",
+        url: `/products/${productId}/reviews`,
+        data: { rating, comment }
+    });
+};
+
+export const deleteReview = async (productId) => {
+    return request({
+        method: "delete",
+        url: `/products/${productId}/reviews`
     });
 };

@@ -1,51 +1,29 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
-import { fetchProduct, fetchProducts } from "../api/products";
-import { useCart, useToast } from "../context/hooks";
+import { deleteReview, fetchProduct, fetchProducts, submitReview } from "../api/products";
+import { useAuth, useCart, useToast } from "../context/hooks";
 import useAsync from "../hooks/useAsync";
+import Price from "../components/Price";
 import ProductCard from "../components/ProductCard";
 import ProductImage from "../components/ProductImage";
 import QuantityStepper from "../components/QuantityStepper";
-import { EmptyState, ErrorState, Loading } from "../components/Feedback";
+import { Stars, StarInput } from "../components/Stars";
+import WishlistButton from "../components/WishlistButton";
+import { Alert, EmptyState, ErrorState, Loading } from "../components/Feedback";
 import {
     CartIcon,
+    CheckCircleIcon,
     ChevronRightIcon,
     ShieldIcon,
     TruckIcon
 } from "../components/icons";
 import { LOW_STOCK_THRESHOLD } from "../utils/catalog";
-import { formatCurrency, formatDate, formatStockLabel, shortId } from "../utils/format";
+import { discountPercent, formatCurrency, formatDate, formatStockLabel, initials, pluralize } from "../utils/format";
 
-function RelatedProducts({ product }) {
-    const related = useAsync(
-        () => fetchProducts({ category: product.category, limit: 5 }),
-        [product.category]
-    );
-
-    const items = (related.data?.products ?? [])
-        .filter((item) => item._id !== product._id)
-        .slice(0, 4);
-
-    if (items.length === 0) return null;
-
-    return (
-        <section className="related">
-            <div className="section-head">
-                <h2 className="display display--sm">More in {product.category}</h2>
-                <Link to={`/?category=${product.category}`} className="link-underline text-sm">
-                    View all
-                </Link>
-            </div>
-
-            <div className="grid-auto">
-                {items.map((item) => (
-                    <ProductCard key={item._id} product={item} />
-                ))}
-            </div>
-        </section>
-    );
-}
+// -----------------------------------------------------
+// Buy box
+// -----------------------------------------------------
 
 function BuyBox({ product }) {
     const { addToCart, quantityOf } = useCart();
@@ -62,34 +40,32 @@ function BuyBox({ product }) {
         setRequested(1);
     };
 
-    if (product.stock <= 0) {
-        return (
-            <div className="detail__buy">
-                <button type="button" className="btn btn--primary btn--lg" disabled>
-                    Sold out
-                </button>
-            </div>
-        );
-    }
-
     return (
         <>
             <div className="detail__buy">
-                <QuantityStepper
-                    value={quantity}
-                    max={Math.max(available, 1)}
-                    onChange={setRequested}
-                />
+                {product.stock > 0 && (
+                    <QuantityStepper
+                        value={quantity}
+                        max={Math.max(available, 1)}
+                        onChange={setRequested}
+                    />
+                )}
 
                 <button
                     type="button"
-                    className="btn btn--accent btn--lg"
+                    className="btn btn--accent btn--lg detail__add"
                     onClick={handleAdd}
-                    disabled={available === 0}
+                    disabled={product.stock <= 0 || available === 0}
                 >
                     <CartIcon size={16} />
-                    {available === 0 ? "All stock in your cart" : "Add to cart"}
+                    {product.stock <= 0
+                        ? "Sold out"
+                        : available === 0
+                          ? "All stock in your cart"
+                          : "Add to cart"}
                 </button>
+
+                <WishlistButton product={product} variant="button" />
             </div>
 
             {inCart > 0 && (
@@ -102,11 +78,226 @@ function BuyBox({ product }) {
     );
 }
 
+// -----------------------------------------------------
+// Reviews
+// -----------------------------------------------------
+
+function RatingBreakdown({ reviews, rating, total }) {
+    const counts = [5, 4, 3, 2, 1].map((stars) => ({
+        stars,
+        count: reviews.filter((review) => review.rating === stars).length
+    }));
+
+    return (
+        <div className="breakdown">
+            <div className="breakdown__score">
+                <span className="breakdown__value">{total > 0 ? rating.toFixed(1) : "—"}</span>
+                <Stars rating={rating} size={16} />
+                <span className="muted text-sm">{pluralize(total, "review")}</span>
+            </div>
+
+            <ul className="breakdown__bars">
+                {counts.map(({ stars, count }) => (
+                    <li key={stars} className="breakdown__row">
+                        <span className="breakdown__label">{stars}★</span>
+                        <span className="breakdown__track">
+                            <span
+                                className="breakdown__fill"
+                                style={{ width: `${total ? (count / total) * 100 : 0}%` }}
+                            />
+                        </span>
+                        <span className="breakdown__count">{count}</span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+function ReviewForm({ productId, existing, onSaved }) {
+    const { notify } = useToast();
+    const [rating, setRating] = useState(existing?.rating ?? 0);
+    const [comment, setComment] = useState(existing?.comment ?? "");
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        if (!rating) {
+            setError("Pick a star rating first.");
+            return;
+        }
+
+        setSaving(true);
+        setError("");
+
+        try {
+            await submitReview(productId, { rating, comment });
+            notify(existing ? "Your review was updated" : "Thanks for your review!");
+            onSaved();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setSaving(true);
+
+        try {
+            await deleteReview(productId);
+            notify("Your review was removed");
+            onSaved();
+        } catch (err) {
+            setError(err.message);
+            setSaving(false);
+        }
+    };
+
+    return (
+        <form className="review-form" onSubmit={handleSubmit}>
+            <h3 className="review-form__title">{existing ? "Edit your review" : "Write a review"}</h3>
+
+            <Alert>{error}</Alert>
+
+            <StarInput value={rating} onChange={setRating} />
+
+            <label className="field">
+                <span className="field__label">Your thoughts (optional)</span>
+                <textarea
+                    className="textarea"
+                    maxLength={1000}
+                    placeholder="What did you like or dislike?"
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                />
+            </label>
+
+            <div className="cluster">
+                <button type="submit" className="btn btn--primary" disabled={saving}>
+                    {saving ? "Saving…" : existing ? "Update review" : "Post review"}
+                </button>
+                {existing && (
+                    <button type="button" className="btn btn--ghost" onClick={handleDelete} disabled={saving}>
+                        Delete
+                    </button>
+                )}
+            </div>
+        </form>
+    );
+}
+
+function Reviews({ product, onChanged }) {
+    const { user, isAuthenticated } = useAuth();
+    const location = useLocation();
+    const reviews = product.reviews ?? [];
+    const mine = user ? reviews.find((review) => String(review.user) === String(user.id)) : null;
+
+    return (
+        <section className="reviews" id="reviews">
+            <div className="section-head">
+                <h2 className="display display--sm">Customer reviews</h2>
+            </div>
+
+            <div className="reviews__grid">
+                <aside className="reviews__side">
+                    <RatingBreakdown reviews={reviews} rating={product.rating} total={product.numReviews} />
+
+                    {isAuthenticated ? (
+                        <ReviewForm
+                            key={mine ? `${mine._id}-${mine.updatedAt}` : "new"}
+                            productId={product._id}
+                            existing={mine}
+                            onSaved={onChanged}
+                        />
+                    ) : (
+                        <p className="reviews__signin text-sm">
+                            <Link to="/login" state={{ from: location }} className="link-underline">
+                                Sign in
+                            </Link>{" "}
+                            to write a review.
+                        </p>
+                    )}
+                </aside>
+
+                <div>
+                    {reviews.length === 0 ? (
+                        <p className="muted">No reviews yet. Be the first to share what you think.</p>
+                    ) : (
+                        <ul className="review-list">
+                            {reviews.map((review) => (
+                                <li className="review" key={review._id}>
+                                    <span className="review__avatar">{initials(review.name)}</span>
+                                    <div className="review__body">
+                                        <div className="review__head">
+                                            <span className="strong">{review.name}</span>
+                                            {review.verifiedPurchase && (
+                                                <span className="review__verified">
+                                                    <CheckCircleIcon size={13} /> Verified purchase
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="review__meta">
+                                            <Stars rating={review.rating} size={13} />
+                                            <span className="muted text-xs">{formatDate(review.createdAt)}</span>
+                                        </div>
+                                        {review.comment && <p className="review__text">{review.comment}</p>}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+// -----------------------------------------------------
+// Related
+// -----------------------------------------------------
+
+function RelatedProducts({ product }) {
+    const related = useAsync(
+        () => fetchProducts({ category: product.category, sort: "rating", limit: 5 }),
+        [product.category]
+    );
+
+    const items = (related.data?.products ?? [])
+        .filter((item) => item._id !== product._id)
+        .slice(0, 4);
+
+    if (items.length === 0) return null;
+
+    return (
+        <section className="related">
+            <div className="section-head">
+                <h2 className="display display--sm">You may also like</h2>
+                <Link to={`/?category=${encodeURIComponent(product.category)}`} className="link-underline text-sm">
+                    More {product.category}
+                </Link>
+            </div>
+
+            <div className="grid-auto">
+                {items.map((item) => (
+                    <ProductCard key={item._id} product={item} />
+                ))}
+            </div>
+        </section>
+    );
+}
+
+// -----------------------------------------------------
+// Page
+// -----------------------------------------------------
+
 export default function ProductDetails() {
     const { id } = useParams();
     const { data: product, error, loading, reload } = useAsync(() => fetchProduct(id), [id]);
 
-    if (error) {
+    if (error && !product) {
         const notFound = error.status === 404 || error.status === 400;
 
         return (
@@ -125,7 +316,7 @@ export default function ProductDetails() {
         );
     }
 
-    if (loading || !product) {
+    if (!product || (loading && product._id !== id)) {
         return (
             <div className="page detail">
                 <Loading label="Loading product…" />
@@ -134,13 +325,14 @@ export default function ProductDetails() {
     }
 
     const lowStock = product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD;
+    const off = discountPercent(product);
 
     return (
         <div className="page detail">
             <nav className="detail__crumbs" aria-label="Breadcrumb">
                 <Link to="/">Shop</Link>
                 <ChevronRightIcon size={12} />
-                <Link to={`/?category=${product.category}`}>{product.category}</Link>
+                <Link to={`/?category=${encodeURIComponent(product.category)}`}>{product.category}</Link>
                 <ChevronRightIcon size={12} />
                 <span className="clamp-1">{product.name}</span>
             </nav>
@@ -149,18 +341,32 @@ export default function ProductDetails() {
                 <div className="detail__media">
                     <div className="detail__frame">
                         <ProductImage src={product.image} alt={product.name} iconSize={64} />
+                        {off > 0 && <span className="badge badge--sale detail__sale">−{off}%</span>}
                     </div>
                 </div>
 
                 <div>
-                    <div className="cluster">
-                        <span className="badge">{product.category}</span>
-                        {product.stock <= 0 && <span className="badge badge--danger">Sold out</span>}
-                        {lowStock && <span className="badge badge--amber">Low stock</span>}
+                    <p className="detail__brand">{product.brand || product.category}</p>
+                    <h1 className="display detail__title">{product.name}</h1>
+
+                    <a href="#reviews" className="detail__rating">
+                        {product.numReviews > 0 ? (
+                            <Stars rating={product.rating} count={product.numReviews} size={15} showValue />
+                        ) : (
+                            <span className="muted text-sm">No reviews yet</span>
+                        )}
+                    </a>
+
+                    <div className="detail__price">
+                        <Price product={product} size="lg" />
+                        {off > 0 && (
+                            <p className="detail__save">
+                                You save {formatCurrency(product.compareAtPrice - product.price)}
+                            </p>
+                        )}
+                        <p className="muted text-xs">Inclusive of all taxes</p>
                     </div>
 
-                    <h1 className="display detail__title">{product.name}</h1>
-                    <p className="detail__price">{formatCurrency(product.price)}</p>
                     <p className="detail__desc">{product.description}</p>
 
                     <p className={`detail__stock${product.stock <= 0 ? " is-out" : lowStock ? " is-low" : ""}`}>
@@ -172,23 +378,23 @@ export default function ProductDetails() {
 
                     <ul className="detail__perks">
                         <li>
-                            <ShieldIcon />
-                            <span>Secure payment through Stripe Checkout</span>
+                            <TruckIcon />
+                            <span>Free shipping on every order</span>
                         </li>
                         <li>
-                            <TruckIcon />
-                            <span>Track the order status from your account</span>
+                            <ShieldIcon />
+                            <span>Secure payment through Stripe Checkout</span>
                         </li>
                     </ul>
 
                     <dl className="detail__specs">
                         <div className="detail__spec">
-                            <dt>Category</dt>
-                            <dd>{product.category}</dd>
+                            <dt>Brand</dt>
+                            <dd>{product.brand || "—"}</dd>
                         </div>
                         <div className="detail__spec">
-                            <dt>Item no.</dt>
-                            <dd className="mono">{shortId(product._id)}</dd>
+                            <dt>Category</dt>
+                            <dd>{product.category}</dd>
                         </div>
                         <div className="detail__spec">
                             <dt>Listed</dt>
@@ -198,6 +404,7 @@ export default function ProductDetails() {
                 </div>
             </div>
 
+            <Reviews product={product} onChanged={reload} />
             <RelatedProducts product={product} />
         </div>
     );

@@ -8,7 +8,9 @@ import { STORAGE_KEYS, readJson, writeJson } from "../utils/storage";
 const toCartItem = (product, quantity) => ({
     _id: product._id,
     name: product.name,
+    brand: product.brand || "",
     price: product.price,
+    compareAtPrice: product.compareAtPrice || null,
     image: product.image || "",
     category: product.category,
     stock: product.stock,
@@ -102,6 +104,7 @@ export default function CartProvider({ children }) {
 
                 if (
                     updated.price !== item.price ||
+                    updated.compareAtPrice !== item.compareAtPrice ||
                     updated.stock !== item.stock ||
                     updated.quantity !== item.quantity ||
                     updated.name !== item.name ||
@@ -123,11 +126,19 @@ export default function CartProvider({ children }) {
             (sum, item) => sum + item.price * item.quantity,
             0
         );
+        const savings = cart.reduce(
+            (sum, item) =>
+                item.compareAtPrice > item.price
+                    ? sum + (item.compareAtPrice - item.price) * item.quantity
+                    : sum,
+            0
+        );
 
         return {
             cart,
             itemCount,
             subtotal,
+            savings,
             quantityOf: (productId) =>
                 cart.find((item) => item._id === productId)?.quantity ?? 0,
             addToCart,
