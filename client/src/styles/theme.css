@@ -1,0 +1,364 @@
+/* =====================================================
+   THEME — "Neon Night" flourishes
+   =====================================================
+   Loaded last. Tokens handle the palette; this layer adds
+   what tokens can't: gradients, glows and the ambient
+   background. Purple leads, green means "go".
+   ===================================================== */
+
+/* -----------------------------------------------------
+   Ambient background
+   ----------------------------------------------------- */
+
+body {
+    background-color: var(--paper);
+    background-image:
+        radial-gradient(900px 520px at 8% -8%, rgba(168, 85, 247, 0.18), transparent 60%),
+        radial-gradient(760px 480px at 100% 0%, rgba(74, 222, 128, 0.08), transparent 60%),
+        radial-gradient(900px 700px at 50% 120%, rgba(124, 58, 237, 0.12), transparent 60%);
+    background-attachment: fixed;
+}
+
+/* Faint grid over the hero for a techy feel */
+.hero {
+    position: relative;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0 -40px;
+    z-index: -1;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at 30% 40%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at 30% 40%, #000 20%, transparent 75%);
+    pointer-events: none;
+}
+
+::selection {
+    background-color: var(--accent);
+    color: #fff;
+}
+
+/* Thin, themed scrollbars */
+* {
+    scrollbar-color: var(--line-strong) transparent;
+}
+
+/* -----------------------------------------------------
+   Type
+   ----------------------------------------------------- */
+
+.display {
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.hero__title em,
+.text-gradient {
+    font-style: normal;
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.nav__mark,
+.notfound__code {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.nav__mark {
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.eyebrow {
+    color: var(--ink-faint);
+}
+
+.hero .eyebrow,
+.admin__header .eyebrow {
+    color: var(--moss);
+}
+
+/* -----------------------------------------------------
+   Buttons
+   ----------------------------------------------------- */
+
+.btn--primary {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35), 0 8px 24px -10px var(--accent-glow);
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #b875ff, #8b4bf5);
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.6), 0 12px 32px -8px var(--accent-glow);
+}
+
+/* Green = the money buttons (add to cart, checkout) */
+.btn--accent {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    border-color: transparent;
+    color: #04130a;
+    box-shadow: 0 8px 24px -10px var(--moss-glow);
+}
+
+.btn--accent:hover:not(:disabled) {
+    background: linear-gradient(135deg, #6ee7a0, #2fd468);
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(110, 231, 160, 0.5), 0 12px 32px -8px var(--moss-glow);
+}
+
+.btn--outline:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: #fff;
+    background-color: var(--accent-wash);
+}
+
+.btn--danger:hover:not(:disabled) {
+    color: var(--ink-inverse);
+}
+
+.spinner {
+    border-top-color: var(--accent);
+}
+
+/* -----------------------------------------------------
+   Navigation
+   ----------------------------------------------------- */
+
+.nav {
+    border-bottom-color: var(--line);
+}
+
+.nav__link.is-active::after {
+    background: var(--gradient-brand);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.nav__cart {
+    border-color: var(--line-strong);
+}
+
+.nav__cart:hover {
+    background-color: var(--accent-wash);
+    border-color: var(--accent);
+    color: var(--ink);
+}
+
+.nav__cart:hover .nav__cart-count {
+    background-color: var(--moss);
+    color: #04130a;
+}
+
+.nav__cart-count {
+    background-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.nav__avatar,
+.profile__avatar {
+    background: var(--gradient-brand);
+    color: #fff;
+}
+
+.nav__identity:hover {
+    border-color: var(--accent);
+}
+
+/* -----------------------------------------------------
+   Chips, steppers, inputs
+   ----------------------------------------------------- */
+
+.chip:hover {
+    border-color: var(--accent);
+    color: var(--ink);
+}
+
+.chip.is-active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 18px -4px var(--accent-glow);
+}
+
+.qty__btn:hover:not(:disabled) {
+    background-color: var(--accent);
+    color: #fff;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+    border-color: var(--accent);
+    background-color: var(--paper-raised);
+}
+
+.search {
+    border-color: var(--line-strong);
+}
+
+.search:focus-within {
+    border-color: var(--accent);
+}
+
+.pagination__page.is-active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.link-underline {
+    background-image: var(--gradient-text);
+}
+
+.toggle input {
+    accent-color: var(--moss);
+}
+
+/* -----------------------------------------------------
+   Cards & surfaces
+   ----------------------------------------------------- */
+
+.product-card {
+    background-color: rgba(16, 16, 24, 0.85);
+}
+
+.product-card:hover {
+    border-color: rgba(168, 85, 247, 0.65);
+}
+
+.product-card__price,
+.detail__price,
+.cart-line__total,
+.summary__total-value,
+.order-card__total {
+    color: var(--moss);
+}
+
+.hero__visual,
+.detail__media,
+.summary,
+.auth-card,
+.payment-card,
+.profile__card,
+.admin-form {
+    border-color: var(--line-strong);
+    background-color: rgba(16, 16, 24, 0.9);
+    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.08), var(--lift-2);
+}
+
+a.hero__visual:hover {
+    border-color: rgba(168, 85, 247, 0.6);
+}
+
+.ticker {
+    background: linear-gradient(90deg, rgba(168, 85, 247, 0.12), rgba(74, 222, 128, 0.08));
+    border-color: var(--line);
+}
+
+.ticker__dot {
+    background-color: var(--moss);
+    box-shadow: 0 0 8px var(--moss-glow);
+}
+
+.section-head {
+    border-bottom: 1px solid transparent;
+    border-image: linear-gradient(90deg, var(--accent), rgba(74, 222, 128, 0.6), transparent) 1;
+}
+
+.admin-tile:hover {
+    background-color: var(--paper-raised);
+    border-color: var(--accent);
+}
+
+.admin-tile__icon {
+    background-color: var(--accent-wash);
+    color: var(--accent);
+}
+
+.admin-tile__cta {
+    color: var(--moss);
+}
+
+.stat {
+    background: linear-gradient(160deg, rgba(168, 85, 247, 0.08), rgba(16, 16, 24, 0.9) 55%);
+}
+
+.stat--accent .stat__value { color: var(--accent); }
+
+.admin-table tr:hover td {
+    background-color: var(--accent-wash);
+}
+
+.footer {
+    background-color: rgba(10, 10, 15, 0.9);
+    border-top-color: var(--line);
+}
+
+.footer__list a:hover {
+    color: var(--moss);
+}
+
+.detail__perks svg,
+.auth__point-icon {
+    color: var(--moss);
+}
+
+/* -----------------------------------------------------
+   Toasts
+   ----------------------------------------------------- */
+
+.toast {
+    background-color: var(--paper-raised);
+    color: var(--ink);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    box-shadow: 0 0 24px -8px var(--moss-glow), var(--lift-3);
+}
+
+.toast .toast__icon {
+    color: var(--moss);
+}
+
+.toast--error {
+    background-color: var(--paper-raised);
+    border-color: rgba(248, 113, 113, 0.45);
+    box-shadow: 0 0 24px -8px rgba(248, 113, 113, 0.4), var(--lift-3);
+}
+
+.toast--error .toast__icon {
+    color: var(--danger);
+}
+
+/* -----------------------------------------------------
+   Badges over photos
+   ----------------------------------------------------- */
+/* Translucent washes vanish on light product shots, so give
+   badges that sit on images a solid dark backing. */
+
+.product-card__flags .badge,
+.hero__visual-badge {
+    background-color: rgba(7, 7, 11, 0.82);
+    border-color: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.product-card__flags .badge { color: var(--ink-soft); }
+.product-card__flags .badge--amber { color: var(--amber); }
+.product-card__flags .badge--danger { color: var(--danger); }
+.hero__visual-badge { color: var(--moss); }
+
+/* Room for the headline to breathe on wide screens */
+.hero__content {
+    max-width: 580px;
+}

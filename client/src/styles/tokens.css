@@ -1,0 +1,134 @@
+/* =====================================================
+   DESIGN TOKENS — "Neon Night"
+   =====================================================
+   Dark storefront: near-black ground, cool off-white ink,
+   electric purple as the primary accent and neon green for
+   "go" actions and success. All colour, type, space, motion
+   and elevation decisions resolve to these tokens.
+   ===================================================== */
+
+:root {
+    color-scheme: dark;
+
+    /* ---------- Colour: ground & ink ---------- */
+
+    --paper: #07070b;
+    --paper-raised: #101018;
+    --paper-sunken: #16161f;
+    --paper-inverse: #ecebf5;
+
+    --ink: #ecebf5;
+    --ink-soft: #b6b3cc;
+    --ink-faint: #7f7c96;
+    --ink-inverse: #07070b;
+
+    --line: #22212e;
+    --line-strong: #353348;
+
+    /* ---------- Colour: accent ---------- */
+
+    /* Purple — primary accent */
+    --accent: #a855f7;
+    --accent-deep: #7c3aed;
+    --accent-wash: rgba(168, 85, 247, 0.16);
+    --accent-glow: rgba(168, 85, 247, 0.45);
+
+    /* Green — success, stock, "go" actions */
+    --moss: #4ade80;
+    --moss-deep: #22c55e;
+    --moss-wash: rgba(74, 222, 128, 0.13);
+    --moss-glow: rgba(74, 222, 128, 0.4);
+
+    --amber: #fbbf24;
+    --amber-wash: rgba(251, 191, 36, 0.13);
+
+    --danger: #f87171;
+    --danger-wash: rgba(248, 113, 113, 0.14);
+
+    --gradient-brand: linear-gradient(120deg, #a855f7 0%, #7c3aed 45%, #4ade80 130%);
+    --gradient-text: linear-gradient(100deg, #c084fc 0%, #a855f7 40%, #4ade80 100%);
+
+    /* ---------- Typography ---------- */
+
+    --font-display: "Space Grotesk", "Inter", -apple-system, sans-serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo,
+        monospace;
+
+    --text-2xs: 0.6875rem;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-md: 1.125rem;
+    --text-lg: 1.375rem;
+    --text-xl: 1.75rem;
+    --text-2xl: 2.25rem;
+    --text-3xl: 3rem;
+    --text-4xl: 4rem;
+    --text-5xl: 5.5rem;
+
+    --leading-tight: 1.06;
+    --leading-snug: 1.25;
+    --leading-normal: 1.55;
+    --leading-relaxed: 1.7;
+
+    --tracking-tight: -0.03em;
+    --tracking-snug: -0.015em;
+    --tracking-wide: 0.08em;
+    --tracking-wider: 0.16em;
+
+    /* ---------- Space ---------- */
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+    --space-9: 96px;
+    --space-10: 128px;
+
+    /* ---------- Shape ---------- */
+
+    --radius-xs: 3px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+
+    --hairline: 1px solid var(--line);
+    --hairline-strong: 1px solid var(--line-strong);
+    --hairline-ink: 1px solid var(--line-strong);
+
+    /* ---------- Elevation ---------- */
+
+    --lift-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --lift-2: 0 10px 30px -12px rgba(168, 85, 247, 0.35);
+    --lift-3: 0 24px 60px -22px rgba(168, 85, 247, 0.55);
+
+    /* ---------- Motion ---------- */
+
+    --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+    --duration-fast: 130ms;
+    --duration-base: 220ms;
+    --duration-slow: 420ms;
+
+    /* ---------- Layout ---------- */
+
+    --page-max: 1240px;
+    --page-gutter: 28px;
+    --nav-height: 74px;
+}
+
+@media (max-width: 720px) {
+    :root {
+        --page-gutter: 18px;
+        --text-4xl: 2.75rem;
+        --text-5xl: 3.25rem;
+        --text-3xl: 2.125rem;
+    }
+}
